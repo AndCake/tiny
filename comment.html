@@ -1,0 +1,17 @@
+<link rel="html" href="./avatar.html"/>
+<template data-name="x-comment" data-attrs="author,@">
+	<style>
+		label {
+			font-weight: bold;
+			display: block;
+			color: var(--primary-color);
+		}
+		p {
+			color: #414141;
+		}
+	</style>
+	<div>
+		<label><x-avatar data-user="{{author}}"></x-avatar>{{author}} wrote:</label>
+		<p>{{@}}</p>
+	</div>
+</template>
