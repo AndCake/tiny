@@ -79,7 +79,7 @@ Array.from(document.querySelectorAll("template[data-name]")).forEach((tpl) => {
       // make sure we get informed about registered attributes of the tag
       static get observedAttributes() {
         // we're only listening to data attributes
-        return tpl.dataset.attrs.split(",").map((x) => `data-${x}`);
+        return tpl.dataset.attrs?.split(",").map((x) => `data-${x}`) || [];
       }
 
       constructor() {
@@ -89,7 +89,7 @@ Array.from(document.querySelectorAll("template[data-name]")).forEach((tpl) => {
         this.render();
 
         // if we are interested in getting informed on changes to our content
-        if (tpl.dataset.attrs.includes("@")) {
+        if (tpl.dataset.attrs?.includes("@")) {
           // observe it for changes (if changed, re-render)
           const observer = new MutationObserver(() => {
             this.context["@"] = this.innerHTML;
@@ -170,3 +170,4 @@ function parseDataset(dataset) {
     {},
   ));
 }
+

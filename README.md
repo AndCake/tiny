@@ -34,7 +34,7 @@ Using the declared component:
 	<comment-list data-list='[{"author": "Carl Dall", "text": "Hi there!"}, {"author": "Me", "text": "Ohohoho!"}]'></comment-list>
 	
 	<!-- load the JS to render the comment-list -->
-	<script src="https://raw.githubusercontent.com/AndCake/tiny/main/tiny.js"></script>
+	<script type="module" src="https://raw.githubusercontent.com/AndCake/tiny/main/tiny.js"></script>
 </body>
 </html>
 ```
