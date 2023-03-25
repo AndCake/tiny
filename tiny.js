@@ -48,7 +48,10 @@ Component definitions can be imported into the page using the LINK tag:
 import Mustache from "https://esm.sh/mustache@4.2.0";
 
 // first load all referenced components
+export default async function init({document, customElements, HTMLElement, MutationObserver}) {
+if (!document) return;
 let components;
+let urls = [];
 do {
   const div = document.createElement("div");
   // fetch the content of all files coming from the href of a link[rel="html"]
@@ -57,7 +60,10 @@ do {
       async (link) => {
         const href = link.href;
         link.remove();
-        return await fetch(href).then((res) =>
+        // make sure we're not fetching stuff more than once
+        if (urls.includes(href)) return '';
+        urls.push(href);
+        return await fetch(href, new URL(location.href)).then((res) =>
           res.status === 200 && res.text()
         );
       },
@@ -93,6 +99,7 @@ Array.from(document.querySelectorAll("template[data-name]")).forEach((tpl) => {
           // observe it for changes (if changed, re-render)
           const observer = new MutationObserver(() => {
             this.context["@"] = this.innerHTML;
+		    console.log("RE-RENDERING", elName);
             this.render();
           });
 
@@ -105,40 +112,58 @@ Array.from(document.querySelectorAll("template[data-name]")).forEach((tpl) => {
         }
       }
 
+	  connectedCallback() {
+        if (this.onComponentMounted && typeof this.onComponentMounted === 'function') {
+        	this.onComponentMounted.call(this);
+        }		  	
+	  }
+	  
       // render the custom element by using the template
       render() {
         // retrieve HTML from template content
         const content = document.createDocumentFragment();
         content.appendChild(tpl.content.cloneNode(true));
-        const htmlContent = Array.from(content.children).map((x) =>
+        const htmlContent = Array.from(content.children).filter(x => x.tagName?.toLowerCase() !== "script").map((x) =>
           x.outerHTML || x.nodeValue || ""
         ).join("");
 
+		try {
         // use mustache to replace dynamic parts in the HTML
         this.shadowRoot.innerHTML = Mustache.render(htmlContent, this.context);
+        } catch (e) {
+        	throw new Error("ERROR parsing " + elName + " definition: Mustache error " + e.message);
+        }
 
-        // check if there is any event handlers to be attached
-        const script = this.shadowRoot.querySelector("script");
-        if (script) {
-          // extract them
-          const events = eval(
-            "(() => { return " + script.innerText?.trim() + "; })()",
-          );
-          // expose functions defined there to current element
-          Object.assign(this, events);
+        try {
+	        // check if there is any event handlers to be attached
+	        const script = content.querySelector("script");
+	        if (script) {
+	          // extract them
+	          const events = eval(
+	            "(() => { return " + script.innerHTML?.trim() + "; })()",
+	          );
+	          // expose functions defined there to current element
+	          Object.assign(this, events);
 
-          // and attach events them with the re-rendered elements
-          Object.keys(events).filter((x) =>
-            typeof events[x] === "object" && events[x]
-          )
-            .forEach((el) => {
-              Object.keys(events[el]).forEach((event) => {
-                this.shadowRoot.querySelector(el).addEventListener(
-                  event,
-                  (e) => events[el][event](e),
-                );
-              });
-            });
+	          // and attach events them with the re-rendered elements
+	          Object.keys(events).filter((x) =>
+	            typeof events[x] === "object" && events[x]
+	          )
+	            .forEach((el) => {
+	              Object.keys(events[el]).forEach((event) => {
+	                Array.from(this.shadowRoot?.querySelectorAll(el)).forEach(ex => {
+		                ex?.addEventListener(
+		                  event,
+		                  (e) => events[el][event](e),
+		                );
+	                });
+	              });
+	            });
+	        }
+        } catch (e) {
+	        console.log(e);
+	        console.log(e);
+        	throw new Error("Unable to parse script of " + elName + ": " + e.message + ': ' + content.querySelector('script').innerHTML?.trim());
         }
       }
 
@@ -150,6 +175,10 @@ Array.from(document.querySelectorAll("template[data-name]")).forEach((tpl) => {
     },
   );
 });
+}
+
+await init(window);
+window?.document?.documentElement?.classList.add("tiny-loaded");
 
 function safeParse(data) {
   if (data.startsWith("{") || data.startsWith("[") || data.startsWith('"')) {
@@ -170,4 +199,3 @@ function parseDataset(dataset) {
     {},
   ));
 }
-
