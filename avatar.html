@@ -7,21 +7,16 @@
 		}
 	</style>
 	<div>
-		<img src="https://ui-avatars.com/api/?name={{user}}"/>
-		{{clicked}}
+		<img @click="this.counter += 1;this.context.clicked = this.counter;" src="https://ui-avatars.com/api/?name={{user}}"/>
+		<span @click="this.dec();" x-text="this.context.clicked"></span>
 	</div>
 	<script>
-		{
+		({
+			counter: 0,
 			dec() {
 				this.counter = (this.counter || 0) - 1;
-				this.dataset.clicked = this.counter;		
+				this.context.clicked = this.counter;		
 			},
-			img: {
-				click: (e) => {
-					this.counter = (this.counter || 0) + 1;
-					this.setAttribute('data-clicked', this.counter);
-				}
-			}
-		}
+		})
 	</script>
 </template>
