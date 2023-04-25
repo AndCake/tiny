@@ -50,6 +50,7 @@ import Mustache from "https://esm.sh/mustache@4.2.0";
 // first load all referenced components
 export default async function init(
   { document, customElements, HTMLElement, MutationObserver, ...win },
+  runScripts = true,
 ) {
   if (!document) return;
   let components;
@@ -116,24 +117,25 @@ export default async function init(
             };
             this.attachShadow({ mode: "open" });
 
+            const content = document.createDocumentFragment();
+            content.appendChild(tpl.content.cloneNode(true));
             try {
-              const content = document.createDocumentFragment();
-              content.appendChild(tpl.content.cloneNode(true));
-
               const htmlContent = Array.from(content.children).filter((x) =>
                 x.tagName?.toLowerCase() !== "script"
               ).map((x) => x.outerHTML || x.nodeValue || "").join("");
               this._htmlContent = htmlContent;
 
-              const script = content.querySelector("script");
-              if (script && !script.src) {
-                // extract them
-                const events = eval(
-                  "(() => { return " + script.innerHTML?.trim() + "; })()",
-                );
-                // expose functions defined there to current element
-                Object.assign(this, events);
-                this._events = events;
+              if (runScripts) {
+                const script = content.querySelector("script");
+                if (script && !script.src) {
+                  // extract them
+                  const events = eval(
+                    "(() => { return " + script.innerHTML?.trim() + "; })()",
+                  );
+                  // expose functions defined there to current element
+                  Object.assign(this, events);
+                  this._events = events;
+                }
               }
             } catch (e) {
               console.log(e);
@@ -206,7 +208,14 @@ export default async function init(
                     "arg0",
                     `with (arg0) { return ${attr.value}; }`,
                   ).bind(this, { ...this.context, $el: el });
-                  el.innerText = fn();
+                  try {
+                    el.innerText = fn();
+                  } catch (e) {
+                    console.log(
+                      "warning in element " + tpl.dataset.name + ": ",
+                      e.message,
+                    );
+                  }
                 } else if (attr.name.startsWith(":")) {
                   const fn = new Function(
                     "arg0",
@@ -220,6 +229,7 @@ export default async function init(
                   el.onchange = (event) => {
                     this.context[attr.value] = el.value;
                   };
+                  el.value = el.dataset.value = this.context[attr.value] || "";
                 } else if (attr.name === "x-ref") {
                   this.context.$refs = this.context.$refs || {};
                   this.context.$refs[attr.value] = el;
