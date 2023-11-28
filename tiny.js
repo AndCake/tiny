@@ -134,6 +134,7 @@ export default async function init(
                   );
                   // expose functions defined there to current element
                   Object.assign(this, events);
+                  Object.assign(this.context, events);
                   this._events = events;
                 }
               }
@@ -173,8 +174,8 @@ export default async function init(
             }
           }
 
-          updateNotification() {
-            Array.from(this.shadowRoot.querySelectorAll("*")).forEach((el) => {
+          updateNotification(root = this.shadowRoot) {
+            Array.from(root.querySelectorAll("*")).forEach((el) => {
               if (!el.hasAttributes()) return;
               for (const attr of el.attributes) {
                 if (attr.name.startsWith("@")) {
@@ -197,6 +198,34 @@ export default async function init(
                   if (!doShow()) {
                     el.remove();
                   }
+                } else if (
+                  attr.name === "x-for" &&
+                  el.tagName?.toLowerCase() === "template"
+                ) {
+                  const fn = new Function(
+                    "arg0",
+                    `console.log(Object.keys(arg0), Object.keys(this));with(arg0) { return ${attr
+                      .value.split(
+                        / (?:of|in) /,
+                      )
+                      ?.[1]}.map((${
+                      attr.value.match(/^(.*?) of /)?.[1] || "_"
+                    }, ${attr.value.match(/^(.*?) in /g)?.[1] || "_idx"}) => {
+                      const copy = $el.content.cloneNode(true);
+                      this.updateNotification.call({...this, context: {
+                        ${attr.value.match(/^(.*?) of /)?.[1] || "_"}, ${
+                      attr.value.match(/^(.*?) in /g)?.[1] || "_idx"
+                    }
+                      }}, copy);
+                      $el.insertAfter(copy, $el);
+                  })}`,
+                  );
+                  try {
+                    fn.call(this, { ...this.context, $el: el })();
+                  } catch (e) {
+                    console.log(fn.toString());
+                    throw e;
+                  }
                 } else if (attr.name === "x-html") {
                   const fn = new Function(
                     "arg0",
@@ -211,10 +240,13 @@ export default async function init(
                   try {
                     el.innerText = fn();
                   } catch (e) {
-                    console.log(
-                      "warning in element " + tpl.dataset.name + ": ",
-                      e.message,
-                    );
+                    if (!win.Deno) {
+                      console.log(
+                        "warning in element " + tpl.dataset.name + ": ",
+                        win,
+                        e.message,
+                      );
+                    }
                   }
                 } else if (attr.name.startsWith(":")) {
                   const fn = new Function(
