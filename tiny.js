@@ -177,6 +177,7 @@ export default async function init(
           updateNotification(root = this.shadowRoot) {
             Array.from(root.querySelectorAll("*")).forEach((el) => {
               if (!el.hasAttributes()) return;
+              if (el.parentNode && !!el.parentNode?.closest?.('template')) return;
               for (const attr of el.attributes) {
                 if (attr.name.startsWith("@")) {
                   el[`on${attr.name.substr(1)}`] = new Function(
@@ -204,26 +205,28 @@ export default async function init(
                 ) {
                   const fn = new Function(
                     "arg0",
-                    `console.log(Object.keys(arg0), Object.keys(this));with(arg0) { return ${attr
-                      .value.split(
-                        / (?:of|in) /,
-                      )
-                      ?.[1]}.map((${
-                      attr.value.match(/^(.*?) of /)?.[1] || "_"
-                    }, ${attr.value.match(/^(.*?) in /g)?.[1] || "_idx"}) => {
-                      const copy = $el.content.cloneNode(true);
-                      this.updateNotification.call({...this, context: {
-                        ${attr.value.match(/^(.*?) of /)?.[1] || "_"}, ${
+                    `with(arg0) { return ${
+                      attr
+                        .value.split(
+                          / (?:of|in) /,
+                        )
+                        ?.[1]
+                    }.map((${attr.value.match(/^(.*?) of /)?.[1] || "_"}, ${
                       attr.value.match(/^(.*?) in /g)?.[1] || "_idx"
-                    }
-                      }}, copy);
-                      $el.insertAfter(copy, $el);
+                    }) => {
+                      const copy = $el.content.cloneNode(true);
+                      this.updateNotification.call(Object.assign(this, {context: {
+	                    ...this.context,
+                        ${attr.value.match(/^(.*?) of /)?.[1] || "_"}, 
+                        ${attr.value.match(/^(.*?) in /g)?.[1] || "_idx"}
+                      }}), copy);
+                      $el.before(copy);
                   })}`,
                   );
                   try {
-                    fn.call(this, { ...this.context, $el: el })();
+                    fn.call(this, { ...this.context, $el: el });
                   } catch (e) {
-                    console.log(fn.toString());
+                    console.log(fn.toString(), this.context);
                     throw e;
                   }
                 } else if (attr.name === "x-html") {
@@ -249,13 +252,18 @@ export default async function init(
                     }
                   }
                 } else if (attr.name.startsWith(":")) {
-                  const fn = new Function(
-                    "arg0",
-                    `with (arg0) { return ${attr.value}; }`,
-                  ).bind(this, { ...this.context, $el: el });
-                  const val = fn();
-                  if (val) {
-                    el.setAttribute(attr.name.substr(1), val);
+                  try {
+                    const fn = new Function(
+                      "arg0",
+                      `with (arg0) { return ${attr.value}; }`,
+                    ).bind(this, { ...this.context, $el: el });
+                    const val = fn();
+                    if (val) {
+                      el.setAttribute(attr.name.substr(1), val);
+                    }
+                  }catch(e) {
+                    console.error(this.context);
+                    throw new Error("ERROR evaluating attribute " + attr.name + " of element " + el.tagName + ": " + e.message);
                   }
                 } else if (attr.name === "x-model") {
                   el.onchange = (event) => {
@@ -304,7 +312,10 @@ export default async function init(
                             throw new Error(
                               "Unable to handle event " + event +
                                 " on element " + el + " for component " +
-                                elName + ": " + ex.message,
+                                elName + ": " + ex.message + "\n" + ex.stack,
+                              {
+                                cause: ex,
+                              },
                             );
                           }
                         },
@@ -317,7 +328,6 @@ export default async function init(
 
           // whenever a registered attribute changes, re-render
           attributeChangedCallback(...args) {
-            //console.log("attribute changed", elName, args);
             Object.assign(this.context, parseDataset(this.dataset));
             this.render();
           }
