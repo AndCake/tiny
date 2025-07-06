@@ -1,0 +1,113 @@
+<!-- tiny/tests/test-components.html -->
+<template data-name="x-counter" data-attrs="count">
+  <style>
+    .counter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    button {
+      padding: 5px 10px;
+    }
+  </style>
+  <div class="counter">
+    <button @click="this.decrement()">-</button>
+    <span>{{count}}</span>
+    <button @click="this.increment()">+</button>
+  </div>
+  <script>
+  ({
+    count: 0,
+    increment() {
+      this.count++;
+    },
+    decrement() {
+      this.count--;
+    }
+  })
+  </script>
+</template>
+
+<template data-name="x-todo-list">
+  <style>
+    .todo-list {
+      max-width: 300px;
+      margin: 0 auto;
+    }
+    .todo-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .completed {
+      text-decoration: line-through;
+      color: gray;
+    }
+  </style>
+  <div class="todo-list">
+    <input x-model="newTodo" placeholder="Enter a new todo">
+    <button @click="this.addTodo()">Add Todo</button>
+    <ul>
+        <template x-for="todo of this.todos">
+        <li class="todo-item">
+          <span :class="todo.completed ? 'completed' : ''" x-text="todo.text"></span>
+          <button @click="this.toggleTodo(_idx)">Toggle</button>
+          <button @click="this.removeTodo(_idx)">Delete</button>
+        </li>
+        </template>
+    </ul>
+  </div>
+  <script>
+  ({
+    todos: [],
+    newTodo: '',
+    addTodo() {
+      if (this.newTodo.trim()) {
+        console.log("Pushed ", this.newTodo);
+        this.todos.push({
+          text: this.newTodo,
+          completed: false
+        });
+        this.newTodo = '';
+      }
+    },
+    toggleTodo(index) {
+      this.todos[index].completed = !this.todos[index].completed;
+    },
+    removeTodo(index) {
+      this.todos.splice(index, 1);
+    }
+  })
+  </script>
+</template>
+
+<template data-name="x-parent-component" data-attrs="childMessage">
+  <div>
+    <span>{{childMessage}}</span>
+    <x-child-component @update-message="this.updateMessage($event)"></x-child-component>
+  </div>
+  <script>
+  ({
+    childMessage: 'Initial Message',
+    updateMessage(event) {
+      this.childMessage = event.detail.message;
+    }
+  })
+  </script>
+</template>
+
+<template data-name="x-child-component">
+  <button @click="this.sendMessage()">Update</button>
+  <script>
+  ({
+    sendMessage() {
+      const event = new CustomEvent('update-message', {
+        detail: { message: 'Updated from child' },
+        bubbles: true
+      });
+      console.log(this);
+      this.dispatchEvent(event);
+    }
+  })
+  </script>
+</template>

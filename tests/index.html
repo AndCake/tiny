@@ -1,0 +1,40 @@
+<!-- tiny/tests/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tiny Web Components Test Page</title>
+  <script type="module" src="../dist/tiny.min.js"></script>
+  <link rel="html" href="./test-components.html">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    section {
+      margin-bottom: 30px;
+      border: 1px solid #ddd;
+      padding: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tiny Web Components Test Page</h1>
+
+  <section>
+    <h2>Counter Component</h2>
+    <x-counter count="10"></x-counter>
+  </section>
+
+  <section>
+    <h2>Todo List Component</h2>
+    <x-todo-list></x-todo-list>
+  </section>
+
+  <section>
+      <x-parent-component></x-parent-component>
+  </section>
+</body>
+</html>
