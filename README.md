@@ -321,22 +321,6 @@ Parse dataset attributes with type conversion.
 Contributions are welcome! 
 - Report issues on GitHub
 - Submit pull requests
-- Follow our contribution guidelines
 
 ## License
 MIT License
-
-## Community & Support
-- GitHub Repository
-- Discord Channel
-- Stack Overflow Tag
-```
-
-This updated README includes:
-1. Enhanced two-way binding example with a more realistic user profile component
-2. Comprehensive Server-Side Rendering (SSR) section with multiple strategies
-3. More detailed examples and use cases
-4. Improved styling and formatting
-5. Additional context for using the library in different environments
-
-The documentation now provides a more holistic view of Tiny Web Components, emphasizing its flexibility and potential use cases.
