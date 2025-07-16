@@ -59,8 +59,8 @@ export class TemplateRenderer {
           ).join("");
         }
 
-        if (value === true) {
-          return this.render(content, context);
+        if (value) {
+          return this.render(content, { ...context, ".": value });
         }
 
         return "";

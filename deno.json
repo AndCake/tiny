@@ -1,12 +1,17 @@
 {
   "compilerOptions": {
     "allowJs": true,
-    "lib": ["deno.window", "dom"],
+    "lib": [
+      "deno.window",
+      "dom"
+    ],
     "strict": true,
-    "types": ["deno.dom"]
+    "types": [
+      "deno.dom"
+    ]
   },
   "tasks": {
-    "build": "mkdir dist; deno bundle --minify --platform browser --sourcemap=external --output dist/tiny.min.js src/index.js",
+    "build": "mkdir dist; deno bundle --minify --platform browser --sourcemap=external --output dist/tiny.min.js src/index.js && echo 'GZipped Size: ' `expr $(gzip -c9 dist/tiny.min.js | wc -c) / 1024`'KB'",
     "test": "deno test --no-check --allow-read --allow-env"
   },
   "imports": {

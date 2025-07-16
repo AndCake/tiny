@@ -78,7 +78,13 @@ export class AttributeProcessor {
    * @param {Function} renderCallback - Callback to trigger re-rendering
    */
   static processForAttribute(element, attribute, context, renderCallback) {
-    if (element.tagName.toLowerCase() !== "template") return;
+    if (element.tagName.toLowerCase() !== "template") {
+      console.warn(
+        "For loops only allowed in template tags. Instead found on ",
+        element.tagName,
+      );
+      return;
+    }
 
     const iterations = this.parseListIterations(attribute.value, context);
 

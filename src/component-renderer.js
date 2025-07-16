@@ -8,18 +8,8 @@ import { AttributeProcessor } from "./core/attribute-processor.js";
  * Advanced Web Component Renderer
  * Provides a flexible and extensible rendering mechanism for declarative web components
  */
-export default class ComponentRenderer extends HTMLElement {
-  static formAssociated;
-  /**
-   * Static method to define observed attributes dynamically
-   * @returns {string[]} List of data attributes to observe
-   */
-  static get observedAttributes() {
-    return this.template
-      ? (this.template.dataset.attrs?.split(",").map((x) => `data-${x}`) || [])
-      : [];
-  }
 
+export default class ComponentRenderer extends HTMLElement {
   /**
    * Initialize the web component
    */
@@ -41,10 +31,6 @@ export default class ComponentRenderer extends HTMLElement {
   }
 
   handleFormElements() {
-    this.formAssociated = ["input", "textarea", "select"].includes(
-      this.template.dataset.as || "",
-    );
-
     if (
       ["input", "textarea", "select"].includes(this.template.dataset.as || "")
     ) {
@@ -61,20 +47,21 @@ export default class ComponentRenderer extends HTMLElement {
 
   handleExternalMutations() {
     // if we are interested in getting informed on changes to our content
-    if (this.template.dataset.attrs?.includes("@")) {
-      // observe it for changes (if changed, re-render)
-      const observer = new MutationObserver(() => {
-        this.context["@"] = this.innerHTML;
-        this.render();
-      });
-
-      // Start observing the target node for configured mutations
-      observer.observe(this, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-      });
+    if (!this.template.dataset.attrs?.includes("@")) {
+      return;
     }
+    // observe it for changes (if changed, re-render)
+    const observer = new MutationObserver(() => {
+      this.context["@"] = this.innerHTML;
+      this.render();
+    });
+
+    // Start observing the target node for configured mutations
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
   }
 
   /**
@@ -105,7 +92,7 @@ export default class ComponentRenderer extends HTMLElement {
     try {
       const scriptContent = scriptElement.innerHTML?.trim();
       const events = ContextEvaluator.evaluate(
-        `(function() { return ${scriptContent}; })()`,
+        `(() => { return ${scriptContent}; })()`,
         this.context,
         this,
       );
@@ -135,6 +122,7 @@ export default class ComponentRenderer extends HTMLElement {
 
       // Process dynamic attributes
       this.processDynamicAttributes();
+      this.handleEventProcessing();
 
       // Trigger component rendered lifecycle
       this.onComponentRendered();
@@ -146,6 +134,33 @@ export default class ComponentRenderer extends HTMLElement {
   onComponentRendered() {}
   onComponentMounted() {}
 
+  handleEventProcessing() {
+    const eventObjects = Object.keys(this).filter((x) =>
+      typeof this[x] === "object" && this[x] &&
+      Object.values(this[x]).every((y) => typeof y === "function")
+    );
+    eventObjects.forEach((el) => {
+      Object.keys(this[el]).forEach((event) => {
+        Array.from(this.shadowRoot?.querySelectorAll(el)).forEach((ex) => {
+          ex?.addEventListener(event, (e) => {
+            try {
+              this[el][event].call(this, e);
+            } catch (ex) {
+              throw new Error(
+                "Unable to handle event " + event +
+                  " on element " + el + " for component " +
+                  this.tagName + ": " + ex.message + "\n" + ex.stack,
+                {
+                  cause: ex,
+                },
+              );
+            }
+          });
+        });
+      });
+    });
+  }
+
   /**
    * Process dynamic attributes across rendered elements
    */
@@ -153,11 +168,10 @@ export default class ComponentRenderer extends HTMLElement {
     const elements = (fragment ?? this.shadowRoot).querySelectorAll("*");
 
     elements.forEach((element) => {
-      /* Skip elements inside template tags
-      if (element.closest("template")) {
-        console.log("Found stuff inside template", element);
+      // Skip elements inside template tags
+      if (element.parentNode && !!element.parentNode?.closest?.("template")) {
         return;
-      }//*/
+      }
 
       // Process each attribute using AttributeProcessor
       Array.from(element.attributes).forEach((attr) => {
@@ -213,6 +227,7 @@ export async function initComponents(options = {}) {
   let components;
   const urls = [];
 
+  // import all required components using the LINK[rel="html"] tag
   do {
     const div = document.createElement("div");
     components = await Promise.all(
@@ -240,12 +255,26 @@ export async function initComponents(options = {}) {
   } while (components.length > 0);
 
   // Define custom elements from templates
+  window.knownElements = window.knownElements || [];
   Array.from(document.querySelectorAll("template[data-name]")).forEach(
     (template) => {
       const elementName = template.dataset.name;
+      if (window.knownElements.includes(elementName)) return;
+      window.knownElements.push(elementName);
+
+      const isFormAssociated = ["input", "textarea", "select"].includes(
+        template.dataset.as || "",
+      );
+
+      const observedAttributes = template
+        ? (template.dataset.attrs?.split(",").map((x) => `data-${x}`) || [])
+        : [];
 
       // Create a custom element class for this template
       const ComponentClass = class extends ComponentRenderer {
+        static formAssociated = isFormAssociated;
+        static observedAttributes = observedAttributes;
+
         constructor() {
           super(template);
           this.prepareContent(template);
