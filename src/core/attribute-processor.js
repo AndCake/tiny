@@ -140,17 +140,32 @@ export class AttributeProcessor {
    */
   static processModelAttribute(element, attribute, context, renderCallback) {
     // Set initial value
-    element.value = element.dataset.value = context[attribute.value] || "";
+    element.value =
+      element.dataset.value =
+        this.evaluateExpression(attribute.value, context, element) || "";
 
     // Two-way binding
     element.addEventListener("change", (event) => {
-      context[attribute.value] = event.target.value;
+      this.updateContext(context, event.target.value, attribute.value);
       renderCallback();
       // @TODO: re-rendering here looses the focus
       // when trying to just focus, the cursor might be at the
       // wrong location after, so it needs to be properly
       // restored.
     });
+  }
+
+  static updateContext(context, value, attributeName) {
+    const pathParts = attributeName.split(".");
+    let obj = context;
+    for (let i = 0; i < pathParts.length - 1; i++) {
+      if (!obj[pathParts[i]]) {
+        obj[pathParts[i]] = {};
+      }
+      obj = obj[pathParts[i]];
+    }
+    obj[pathParts[pathParts.length - 1]] = value;
+    return context;
   }
 
   /**

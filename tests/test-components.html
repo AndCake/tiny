@@ -1,4 +1,45 @@
 <!-- tiny/tests/test-components.html -->
+<template data-name="x-user-profile" data-attrs="user">
+  <style>
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+    }
+  </style>
+  <div class="profile">
+    <img class="avatar" src="{{user.avatarUrl}}" alt="{{user.name}}">
+    <div>
+      <h2>{{user.name}}</h2>
+      <p>Name: <input x-model='user.name' type="text"/></p>
+      <p>Email: <input x-model="user.email" type="email"></p>
+      <p>Phone: <input x-model="user.phone" type="tel"></p>
+      <button @click="updateProfile()">Update Profile</button>
+    </div>
+  </div>
+  <script>
+  {
+    user: {
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      phone: '+1 (555) 123-4567',
+      avatarUrl: 'https://ui-avatars.com/api/?name=John+Doe'
+    },
+    updateProfile() {
+      // Simulate profile update
+      console.log('Updating profile:', this.user);
+      // In a real app, you might call an API here
+      alert(`Profile updated for ${this.user.name}`);
+    }
+  }
+  </script>
+</template>
+
 <template data-name="x-counter" data-attrs="count">
   <style>
     .counter {
