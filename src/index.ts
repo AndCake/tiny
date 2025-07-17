@@ -1,6 +1,14 @@
-import { parseDataset, safeParse } from "./dataset-parser.js";
-import { initComponents } from "./component-renderer.js";
-import { compileCSS } from "./stylis-utils.js";
+import { parseDataset, safeParse } from "./dataset-parser.ts";
+import { initComponents } from "./component-renderer.ts";
+import { compileCSS } from "./stylis-utils.ts";
+
+/**
+ * Configuration options for Tiny Web Components library initialization
+ */
+interface InitOptions {
+  window?: Window & typeof globalThis;
+  runScripts?: boolean;
+}
 
 /**
  * Tiny Web Components Library
@@ -19,12 +27,10 @@ if (typeof window === "undefined") {
 /**
  * Initialize Tiny Web Components library
  *
- * @param {Object} [options={}] - Configuration options
- * @param {Window} [options.window=globalThis.window] - Window object to use
- * @param {boolean} [options.runScripts=true] - Whether to execute inline scripts
+ * @param {InitOptions} [options={}] - Configuration options
  * @returns {Promise<void>}
  */
-async function init(options = {}) {
+async function init(options: InitOptions = {}): Promise<void> {
   const {
     window = globalThis.window,
     runScripts = true,

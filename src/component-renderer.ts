@@ -1,25 +1,48 @@
-import Mustache from "./core/template-renderer.js";
-import { parseDataset } from "./dataset-parser.js";
-import { processTemplateCSS } from "./stylis-utils.js";
-import { ContextEvaluator } from "./core/context-evaluator.js";
-import { AttributeProcessor } from "./core/attribute-processor.js";
+import Mustache from "./core/template-renderer.ts";
+import { parseDataset } from "./dataset-parser.ts";
+import { processTemplateCSS } from "./stylis-utils.ts";
+import { ContextEvaluator } from "./core/context-evaluator.ts";
+import { AttributeProcessor } from "./core/attribute-processor.ts";
+
+// Declare a global interface to extend the Window object
+declare global {
+  interface Window {
+    knownElements: string[];
+  }
+}
+
+/**
+ * Initialization options for components
+ */
+interface InitComponentOptions {
+  document?: Document;
+  customElements?: CustomElementRegistry;
+  HTMLElement?: typeof HTMLElement;
+  MutationObserver?: typeof MutationObserver;
+  runScripts?: boolean;
+}
 
 /**
  * Advanced Web Component Renderer
  * Provides a flexible and extensible rendering mechanism for declarative web components
  */
-
 export default class ComponentRenderer extends HTMLElement {
+  template: HTMLTemplateElement;
+  context: ComponentRenderer & Record<string, unknown>;
+  internals_?: ElementInternals;
+  _htmlContent: string = "";
+  _events?: Record<string, unknown>;
+
   /**
    * Initialize the web component
    */
-  constructor(template) {
+  constructor(template: HTMLTemplateElement) {
     super();
     this.attachShadow({ mode: "open" });
 
     // Initialize context with dataset and inner HTML
     this.template = template;
-    this.context = this;
+    this.context = this as ComponentRenderer & Record<string, unknown>;
     Object.assign(this.context, {
       ...parseDataset(this.dataset),
       "@": this.innerHTML,
@@ -30,22 +53,31 @@ export default class ComponentRenderer extends HTMLElement {
     this.handleExternalMutations();
   }
 
-  handleFormElements() {
+  /**
+   * Handle form-associated elements
+   */
+  handleFormElements(): void {
     if (
       ["input", "textarea", "select"].includes(this.template.dataset.as || "")
     ) {
-      this.internals_ = this.attachInternals && this.attachInternals();
-      this.closest("form")?.addEventListener("formdata", (event) => {
-        const formData = event.formData;
-        formData.set(
-          this.dataset.name || this.getAttribute("name"),
-          this.value,
-        );
-      });
+      this.internals_ = this.attachInternals?.();
+      this.closest("form")?.addEventListener(
+        "formdata",
+        (event: FormDataEvent) => {
+          const formData = event.formData;
+          formData.set(
+            this.dataset.name || this.getAttribute("name") || "",
+            (this as unknown as HTMLInputElement).value,
+          );
+        },
+      );
     }
   }
 
-  handleExternalMutations() {
+  /**
+   * Handle external mutations to the component's content
+   */
+  handleExternalMutations(): void {
     // if we are interested in getting informed on changes to our content
     if (!this.template.dataset.attrs?.includes("@")) {
       return;
@@ -66,10 +98,10 @@ export default class ComponentRenderer extends HTMLElement {
 
   /**
    * Prepare component content from template
-   * @param {HTMLTemplateElement} template - Component's template element
+   * @param template - Component's template element
    */
-  prepareContent(template) {
-    const content = template.content.cloneNode(true);
+  prepareContent(template: HTMLTemplateElement): void {
+    const content = template.content.cloneNode(true) as DocumentFragment;
 
     // Extract HTML content (excluding scripts)
     this._htmlContent = Array.from(content.children)
@@ -79,23 +111,23 @@ export default class ComponentRenderer extends HTMLElement {
 
     // Process inline script if present
     const scriptElement = content.querySelector("script");
-    if (scriptElement && !scriptElement.src) {
-      this.processInlineScript(scriptElement);
+    if (scriptElement && !(scriptElement as HTMLScriptElement).src) {
+      this.processInlineScript(scriptElement as HTMLScriptElement);
     }
   }
 
   /**
    * Process and evaluate inline script content
-   * @param {HTMLScriptElement} scriptElement - Script tag to process
+   * @param scriptElement - Script tag to process
    */
-  processInlineScript(scriptElement) {
+  processInlineScript(scriptElement: HTMLScriptElement): void {
     try {
       const scriptContent = scriptElement.innerHTML?.trim();
       const events = ContextEvaluator.evaluate(
         `(() => { return ${scriptContent}; })()`,
         this.context,
         this,
-      );
+      ) as Record<string, unknown>;
 
       // Merge script exports into component context
       Object.assign(this, events);
@@ -109,7 +141,7 @@ export default class ComponentRenderer extends HTMLElement {
   /**
    * Primary rendering method for the component
    */
-  render() {
+  render(): void {
     try {
       // Render Mustache template
       const renderedContent = Mustache.render(this._htmlContent, this.context);
@@ -118,7 +150,9 @@ export default class ComponentRenderer extends HTMLElement {
       const processedContent = processTemplateCSS(renderedContent);
 
       // Update shadow DOM
-      this.shadowRoot.innerHTML = processedContent;
+      if (this.shadowRoot) {
+        this.shadowRoot.innerHTML = processedContent;
+      }
 
       // Process dynamic attributes
       this.processDynamicAttributes();
@@ -131,54 +165,84 @@ export default class ComponentRenderer extends HTMLElement {
     }
   }
 
-  onComponentRendered() {}
-  onComponentMounted() {}
+  /**
+   * Lifecycle method called when component is rendered
+   */
+  onComponentRendered(): void {}
 
-  handleEventProcessing() {
+  /**
+   * Lifecycle method called when component is mounted
+   */
+  onComponentMounted(): void {}
+
+  /**
+   * Handle event processing for the component
+   */
+  handleEventProcessing(): void {
     const eventObjects = Object.keys(this).filter((x) =>
-      typeof this[x] === "object" && this[x] &&
-      Object.values(this[x]).every((y) => typeof y === "function")
+      typeof this[x as keyof this] === "object" && this[x as keyof this] &&
+      Object.values(this[x as keyof this] as Record<string, Function>).every((
+        y,
+      ) => typeof y === "function")
     );
+
     eventObjects.forEach((el) => {
-      Object.keys(this[el]).forEach((event) => {
-        Array.from(this.shadowRoot?.querySelectorAll(el)).forEach((ex) => {
-          ex?.addEventListener(event, (e) => {
-            try {
-              this[el][event].call(this, e);
-            } catch (ex) {
-              throw new Error(
-                "Unable to handle event " + event +
-                  " on element " + el + " for component " +
-                  this.tagName + ": " + ex.message + "\n" + ex.stack,
-                {
-                  cause: ex,
-                },
-              );
-            }
-          });
-        });
-      });
+      Object.keys(this[el as keyof this] as Record<string, Function>).forEach(
+        (event) => {
+          Array.from(this.shadowRoot?.querySelectorAll(el) || []).forEach(
+            (ex) => {
+              ex?.addEventListener(event, (e) => {
+                try {
+                  ((this[el as keyof this] as Record<string, Function>)[
+                    event
+                  ] as Function).call(this, e);
+                } catch (ex) {
+                  throw new Error(
+                    `Unable to handle event ${event} on element ${el} for component ${this.tagName}: ${
+                      (ex as Error).message
+                    }\n${(ex as Error).stack}`,
+                    {
+                      cause: ex,
+                    },
+                  );
+                }
+              });
+            },
+          );
+        },
+      );
     });
   }
 
   /**
    * Process dynamic attributes across rendered elements
+   * @param fragment - Optional fragment to process
+   * @param privateContext - Optional private context for processing
    */
-  processDynamicAttributes(fragment, privateContext) {
-    const elements = (fragment ?? this.shadowRoot).querySelectorAll("*");
+  processDynamicAttributes(
+    fragment?: DocumentFragment,
+    privateContext?: Record<string, unknown>,
+  ): void {
+    const elements = (fragment ?? this.shadowRoot ?? document).querySelectorAll(
+      "*",
+    );
 
-    elements.forEach((element) => {
+    elements.forEach((element: Element) => {
       // Skip elements inside template tags
-      if (element.parentNode && !!element.parentNode?.closest?.("template")) {
+      if (
+        element.parentElement && !!element.parentElement?.closest?.("template")
+      ) {
         return;
       }
 
       // Process each attribute using AttributeProcessor
       Array.from(element.attributes).forEach((attr) => {
         AttributeProcessor.processAttribute(
-          element,
+          element as HTMLElement,
           attr,
-          privateContext ?? this.context,
+          (privateContext ?? this.context) as
+            & ComponentRenderer
+            & Record<string, unknown>,
           (fragment, privateContext) => {
             if (fragment && privateContext) {
               this.processDynamicAttributes(fragment, privateContext);
@@ -194,7 +258,7 @@ export default class ComponentRenderer extends HTMLElement {
   /**
    * Lifecycle method when component is added to the DOM
    */
-  connectedCallback() {
+  connectedCallback(): void {
     if (typeof this.onComponentMounted === "function") {
       this.onComponentMounted();
     }
@@ -202,9 +266,9 @@ export default class ComponentRenderer extends HTMLElement {
 
   /**
    * Lifecycle method when observed attributes change
-   * @param {string} name - Attribute name
+   * @param name - Attribute name
    */
-  attributeChangedCallback(_name) {
+  attributeChangedCallback(_name: string): void {
     // Update context and re-render
     Object.assign(this.context, parseDataset(this.dataset));
     this.render();
@@ -213,9 +277,11 @@ export default class ComponentRenderer extends HTMLElement {
 
 /**
  * Initialize web components from template tags
- * @param {Object} options - Initialization options
+ * @param options - Initialization options
  */
-export async function initComponents(options = {}) {
+export async function initComponents(
+  options: InitComponentOptions = {},
+): Promise<void> {
   const {
     document = window.document,
     customElements = window.customElements,
@@ -224,23 +290,23 @@ export async function initComponents(options = {}) {
   if (!document) return;
 
   // Fetch external component definitions
-  let components;
-  const urls = [];
+  let components: string[] = [];
+  const urls: string[] = [];
 
   // import all required components using the LINK[rel="html"] tag
   do {
     const div = document.createElement("div");
     components = await Promise.all(
       Array.from(document.querySelectorAll('link[rel="html"]')).map(
-        async (link) => {
-          const href = link.href;
+        async (link: Element) => {
+          const href = (link as HTMLLinkElement).href;
           link.remove();
 
           // Prevent duplicate fetches
           if (urls.includes(href)) return "";
           urls.push(href);
 
-          return await fetch(href, new URL(location.href)).then((res) =>
+          return await fetch(new URL(href, location.href)).then((res) =>
             res.status === 200 ? res.text() : `Component ${href} not found.`
           );
         },
@@ -257,17 +323,20 @@ export async function initComponents(options = {}) {
   // Define custom elements from templates
   window.knownElements = window.knownElements || [];
   Array.from(document.querySelectorAll("template[data-name]")).forEach(
-    (template) => {
-      const elementName = template.dataset.name;
-      if (window.knownElements.includes(elementName)) return;
+    (template: Element) => {
+      const elementName = (template as HTMLTemplateElement).dataset.name ??
+        "not-defined";
+      if (window.knownElements?.includes(elementName)) return;
       window.knownElements.push(elementName);
 
       const isFormAssociated = ["input", "textarea", "select"].includes(
-        template.dataset.as || "",
+        (template as HTMLTemplateElement).dataset.as || "",
       );
 
       const observedAttributes = template
-        ? (template.dataset.attrs?.split(",").map((x) => `data-${x}`) || [])
+        ? ((template as HTMLTemplateElement).dataset.attrs?.split(",").map((
+          x,
+        ) => `data-${x}`) || [])
         : [];
 
       // Create a custom element class for this template
@@ -276,14 +345,14 @@ export async function initComponents(options = {}) {
         static observedAttributes = observedAttributes;
 
         constructor() {
-          super(template);
-          this.prepareContent(template);
+          super(template as HTMLTemplateElement);
+          this.prepareContent(template as HTMLTemplateElement);
           this.render();
         }
       };
 
       // Define the custom element
-      customElements.define(elementName, ComponentClass);
+      customElements.define(elementName || "", ComponentClass);
     },
   );
 }

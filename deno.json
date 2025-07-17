@@ -1,22 +1,59 @@
 {
   "compilerOptions": {
-    "allowJs": true,
     "lib": [
       "deno.window",
       "dom"
     ],
-    "strict": true,
     "types": [
       "deno.dom"
     ]
   },
+  "name": "@andcake/tiny",
+  "version": "0.1.0",
+  "description": "A lightweight, declarative library for creating custom web components with dynamic rendering, server-side rendering, event handling, and advanced CSS processing",
+  "keywords": [
+    "web-components",
+    "custom-elements",
+    "template-rendering",
+    "frontend-framework",
+    "lightweight"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./dataset-parser": "./src/dataset-parser.ts",
+    "./core/attribute-processor": "./src/core/attribute-processor.ts",
+    "./core/context-evaluator": "./src/core/context-evaluator.ts",
+    "./core/template-renderer": "./src/core/template-renderer.ts",
+    "./stylis-utils": "./src/stylis-utils.ts"
+  },
+  "publish": {
+    "include": [
+      "src/",
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andcake/tiny.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "AndCake",
+    "email": "roq@quixotic-worx.de"
+  },
   "tasks": {
-    "build": "mkdir dist; deno bundle --minify --platform browser --sourcemap=external --output dist/tiny.min.js src/index.js && echo 'GZipped Size: ' `expr $(gzip -c9 dist/tiny.min.js | wc -c) / 1024`'KB'",
+    "build": "mkdir -p dist; deno bundle --minify --platform browser --sourcemap=external --output dist/tiny.min.js src/index.ts && echo 'GZipped Size: ' `expr $(gzip -c9 dist/tiny.min.js | wc -c) / 1024`'KB'",
     "test": "deno test --no-check --allow-read --allow-env"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.13",
     "@std/testing": "jsr:@std/testing@^1.0.14",
-    "stylis": "npm:stylis@^4.3.6"
+    "stylis": "npm:stylis@4.3.6"
+  },
+  "npm": {
+    "specifiers": {
+      "stylis@4.3.6": "stylis@4.3.6"
+    }
   }
 }

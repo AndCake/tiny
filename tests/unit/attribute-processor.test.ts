@@ -1,7 +1,7 @@
 // tiny/tests/unit/attribute-processor.test.ts
 import { afterEach, beforeEach, describe, it } from "jsr:@std/testing/bdd";
 import { assert, assertEquals, assertFalse } from "@std/assert";
-import { AttributeProcessor } from "../../src/core/attribute-processor.js";
+import { AttributeProcessor } from "../../src/core/attribute-processor.ts";
 import { DOMParser } from "linkedom";
 
 describe("AttributeProcessor", () => {

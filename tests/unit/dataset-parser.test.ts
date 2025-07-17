@@ -1,6 +1,6 @@
 // tiny/tests/unit/dataset-parser.test.ts
 import { assertEquals } from "@std/assert";
-import { parseDataset, safeParse } from "../../src/dataset-parser.js";
+import { parseDataset, safeParse } from "../../src/dataset-parser.ts";
 
 Deno.test("Dataset Parser", async (t) => {
   await t.step("safeParse", () => {

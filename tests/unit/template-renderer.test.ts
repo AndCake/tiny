@@ -1,6 +1,6 @@
 // tiny/tests/unit/template-renderer.test.ts
 import { assertEquals } from "@std/assert";
-import { TemplateRenderer } from "../../src/core/template-renderer.js";
+import { TemplateRenderer } from "../../src/core/template-renderer.ts";
 
 Deno.test("TemplateRenderer", async (t) => {
   await t.step("renders simple interpolation", () => {

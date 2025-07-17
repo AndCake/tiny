@@ -1,6 +1,6 @@
 // tiny/tests/unit/context-evaluator.test.ts
 import { assertEquals } from "@std/assert";
-import { ContextEvaluator } from "../../src/core/context-evaluator.js";
+import { ContextEvaluator } from "../../src/core/context-evaluator.ts";
 
 Deno.test("ContextEvaluator", async (t) => {
   await t.step("evaluate simple expressions", () => {
