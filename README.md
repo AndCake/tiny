@@ -37,7 +37,7 @@ npm install @andcake/tiny
 
 ### Direct Browser Import
 ```html
-<script type="module" src="/path/to/tiny/index.js"></script>
+<script type="module" src="/path/to/tiny.min.js"></script>
 ```
 
 ## Getting Started
@@ -112,7 +112,7 @@ const template = `
       <p>{{.}}</p>
     {{/items}}
     <link rel="html" href="/path/to/x-list.html"/>
-    <x-list data-items='{{items}}'></x-list>
+    <x-list data-items='{{{items}}}'></x-list>
     <script type="module" src="path/to/tiny.js"></script>
   </div>
 `;
@@ -297,7 +297,7 @@ Parse dataset attributes with type conversion.
 - Node.js with appropriate polyfills
 
 ## Performance Considerations
-- Lightweight (~5kb gzipped)
+- Lightweight (~6kb gzipped)
 - No external dependencies
 - Efficient rendering mechanism
 - Optimized for both client and server environments
