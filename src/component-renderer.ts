@@ -4,13 +4,7 @@ import { processTemplateCSS } from "./stylis-utils.ts";
 import { ContextEvaluator } from "./core/context-evaluator.ts";
 import { AttributeProcessor } from "./core/attribute-processor.ts";
 
-// Declare a global interface to extend the Window object
-declare global {
-  interface Window {
-    knownElements: string[];
-  }
-}
-
+const knownElements: string[] = [];
 /**
  * Initialization options for components
  */
@@ -321,13 +315,12 @@ export async function initComponents(
   } while (components.length > 0);
 
   // Define custom elements from templates
-  window.knownElements = window.knownElements || [];
   Array.from(document.querySelectorAll("template[data-name]")).forEach(
     (template: Element) => {
       const elementName = (template as HTMLTemplateElement).dataset.name ??
         "not-defined";
-      if (window.knownElements?.includes(elementName)) return;
-      window.knownElements.push(elementName);
+      if (knownElements?.includes(elementName)) return;
+      knownElements.push(elementName);
 
       const isFormAssociated = ["input", "textarea", "select"].includes(
         (template as HTMLTemplateElement).dataset.as || "",
