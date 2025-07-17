@@ -9,7 +9,7 @@
     ]
   },
   "name": "@andcake/tiny",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A lightweight, declarative library for creating custom web components with dynamic rendering, server-side rendering, event handling, and advanced CSS processing",
   "keywords": [
     "web-components",
