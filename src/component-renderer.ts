@@ -4,6 +4,8 @@ import { processTemplateCSS } from "./stylis-utils.ts";
 import { ContextEvaluator } from "./core/context-evaluator.ts";
 import { AttributeProcessor } from "./core/attribute-processor.ts";
 
+export const TemplateRenderer = Mustache;
+
 const knownElements: string[] = [];
 /**
  * Initialization options for components

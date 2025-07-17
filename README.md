@@ -32,7 +32,7 @@ A lightweight, declarative library for creating custom web components with dynam
 
 ### Via NPM
 ```bash
-npm install @serenomica/tiny-web-components
+npm install @andcake/tiny
 ```
 
 ### Direct Browser Import
@@ -47,15 +47,15 @@ npm install @serenomica/tiny-web-components
 ```html
 <template data-name="x-user-profile" data-attrs="user">
   <style>
-    .profile { 
-      display: flex; 
-      align-items: center; 
-      gap: 1rem; 
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
     }
-    .avatar { 
-      width: 50px; 
-      height: 50px; 
-      border-radius: 50%; 
+    .avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
     }
   </style>
   <div class="profile">
@@ -76,7 +76,7 @@ npm install @serenomica/tiny-web-components
       avatarUrl: 'https://ui-avatars.com/api/?name=John+Doe'
     },
     updateProfile() {
-      // Simulate profile update 
+      // Simulate profile update
       console.log('Updating profile:', this.user);
       // In a real app, you might call an API here
       alert(`Profile updated for ${this.user.name}`);
@@ -99,9 +99,9 @@ Tiny Web Components supports server-side rendering through several approaches:
 ### 1. Static Rendering
 
 ```javascript
-import { TemplateRenderer } from '@serenomica/tiny-web-components';
+import { TemplateRenderer } from '@andcake/tiny';
 
-function renderComponent(template, context) {
+function renderPage(template, context) {
   return TemplateRenderer.render(template, context);
 }
 
@@ -111,6 +111,9 @@ const template = `
     {{#items}}
       <p>{{.}}</p>
     {{/items}}
+    <link rel="html" href="/path/to/x-list.html"/>
+    <x-list data-items='{{items}}'></x-list>
+    <script type="module" src="path/to/tiny.js"></script>
   </div>
 `;
 
@@ -118,45 +121,27 @@ const context = {
   title: 'Server-Rendered List',
   items: ['Item 1', 'Item 2', 'Item 3']
 };
+context.items = JSON.stringify(context.items);
 
-const renderedHTML = renderComponent(template, context);
+const renderedHTML = renderPage(template, context);
 ```
 
-### 2. Node.js Rendering
-
-```javascript
-import { JSDOM } from 'jsdom';
-import { initComponents } from '@serenomica/tiny-web-components';
-
-async function serverRenderComponent(html, context) {
-  const dom = new JSDOM(html);
-  global.window = dom.window;
-  global.document = dom.window.document;
-
-  // Initialize components in server environment
-  await initComponents({
-    document: dom.window.document,
-    runScripts: true
-  });
-
-  // Apply context to components
-  const components = dom.window.document.querySelectorAll('template[data-name]');
-  components.forEach(template => {
-    const componentClass = customElements.get(template.dataset.name);
-    const instance = new componentClass();
-    instance.context = { ...instance.context, ...context };
-    instance.render();
-  });
-
-  return dom.window.document.body.innerHTML;
-}
+x-list.html:
+```html
+<template data-name="x-list" data-attrs="items">
+    <ul>
+    {{#items}}
+        <li>{{.}}</li>
+    {{/items}}
+    </ul>
+</template>
 ```
 
-### 3. Hydration Strategy
+### 2. Hydration Strategy
 
 ```javascript
 // Render initial state on the server
-const initialHTML = renderComponent(template, serverContext);
+const initialHTML = renderPage(template, serverContext);
 
 // On the client, hydrate with full interactivity
 document.body.innerHTML = initialHTML;
@@ -256,9 +241,9 @@ onComponentRendered() {
     <ul>
       {{#todos}}
         <li>
-          <input 
-            type="checkbox" 
-            x-model="completed" 
+          <input
+            type="checkbox"
+            x-model="completed"
             @change="updateTodoStatus(_idx)"
           >
           <span :class="completed ? 'completed' : ''">{{text}}</span>
@@ -276,9 +261,9 @@ onComponentRendered() {
     newTodo: '',
     addTodo() {
       if (this.newTodo.trim()) {
-        this.todos.push({ 
-          text: this.newTodo, 
-          completed: false 
+        this.todos.push({
+          text: this.newTodo,
+          completed: false
         });
         this.newTodo = '';
       }
@@ -318,7 +303,7 @@ Parse dataset attributes with type conversion.
 - Optimized for both client and server environments
 
 ## Contributing
-Contributions are welcome! 
+Contributions are welcome!
 - Report issues on GitHub
 - Submit pull requests
 
