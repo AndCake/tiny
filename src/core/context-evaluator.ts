@@ -18,6 +18,9 @@ export class ContextEvaluator {
     element: HTMLElement | null = null,
   ): unknown {
     try {
+      if (element) {
+        element.context = context;
+      }
       // Extend context with element reference if provided
       const fullContext = element ? { ...context, $el: element } : context;
 
@@ -51,6 +54,7 @@ export class ContextEvaluator {
         // Extend context with event and element references
         const fullContext = {
           ...context,
+          context: context,
           $el: element,
           $event: event,
           event,
