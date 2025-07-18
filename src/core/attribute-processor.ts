@@ -258,6 +258,8 @@ export class AttributeProcessor {
 
     if (value) {
       element.setAttribute(attrName, value);
+    } else {
+      element.removeAttribute(attrName);
     }
   }
 

@@ -102,4 +102,19 @@ describe("AttributeProcessor", () => {
     );
     assert(document.body.contains(element));
   });
+
+  it("can handle toggling attributes", () => {
+    const attribute = {
+      name: ":hidden",
+      value: 'this.context.message.includes("!")',
+    } as Attr;
+    AttributeProcessor.processAttribute(element, attribute, context, () => {});
+    assert(element.hasAttribute("hidden"));
+    context.message = "Hello, World";
+    AttributeProcessor.processAttribute(element, attribute, context, () => {});
+    assert(!element.hasAttribute("hidden"));
+    context.message = "Hello, World!";
+    AttributeProcessor.processAttribute(element, attribute, context, () => {});
+    assert(element.hasAttribute("hidden"));
+  });
 });
