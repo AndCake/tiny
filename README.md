@@ -9,6 +9,7 @@ A lightweight, declarative library for creating custom web components with dynam
 - [Component Syntax](#component-syntax)
 - [Template Syntax](#template-syntax)
 - [Dynamic Attributes](#dynamic-attributes)
+- [Advanced CSS Processing](#advanced-css-processing)
 - [Event Handling](#event-handling)
 - [Lifecycle Methods](#lifecycle-methods)
 - [Server-Side Rendering](#server-side-rendering)
@@ -198,6 +199,238 @@ init(); // Initialize Tiny Web Components
 ```html
 <input x-ref="usernameInput">
 <button @click="$refs.usernameInput.focus()">Focus</button>
+```
+
+## Advanced CSS Processing
+
+Tiny Web Components leverages **Stylis** for advanced CSS processing, providing powerful features beyond standard CSS:
+
+### CSS Nesting
+Write nested CSS rules similar to Sass/SCSS:
+
+```html
+<template data-name="x-card">
+  <style>
+    .card {
+      padding: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+
+      .header {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+      }
+
+      .content {
+        color: #666;
+
+        p {
+          margin: 0.5rem 0;
+        }
+      }
+
+      &:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+
+      &.featured {
+        border-color: #007bff;
+        background: #f8f9fa;
+      }
+    }
+  </style>
+  <div class="card">
+    <div class="header">{{title}}</div>
+    <div class="content">
+      <p>{{description}}</p>
+    </div>
+  </div>
+</template>
+```
+
+### Vendor Prefixing
+Stylis automatically adds vendor prefixes where needed:
+
+```html
+<style>
+  .animated-box {
+    transform: scale(1.2);
+    transition: transform 0.3s ease;
+    user-select: none;
+    /* Automatically becomes -webkit-user-select, -ms-user-select, etc. */
+  }
+</style>
+```
+
+### Media Queries and Responsive Design
+```html
+<style>
+  .responsive-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+
+    @media (min-width: 768px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (min-width: 1024px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>
+```
+
+### CSS Animations and Keyframes
+```html
+<style>
+  @keyframes slideIn {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .slide-animation {
+    animation: slideIn 0.5s ease-in-out;
+  }
+</style>
+```
+
+### Parent Selector (&) Usage
+The `&` selector refers to the parent selector, enabling powerful pattern matching:
+
+```html
+<style>
+  .button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+
+    &.primary {
+      background: #007bff;
+      color: white;
+
+      &:hover {
+        background: #0056b3;
+      }
+    }
+
+    &.secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+</style>
+```
+
+### CSS Custom Properties (CSS Variables) Support
+```html
+<style>
+  :host {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --border-radius: 8px;
+  }
+
+  .themed-component {
+    background: var(--primary-color);
+    border-radius: var(--border-radius);
+
+    .accent {
+      color: var(--secondary-color);
+    }
+  }
+</style>
+```
+
+### Advanced Pseudo-selectors
+```html
+<style>
+  .list-item {
+    padding: 0.5rem;
+
+    &:nth-child(odd) {
+      background: #f8f9fa;
+    }
+
+    &:first-child {
+      border-top-left-radius: 4px;
+      border-top-right-radius: 4px;
+    }
+
+    &:last-child {
+      border-bottom-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+    }
+
+    &:not(.disabled) {
+      cursor: pointer;
+
+      &:hover {
+        background: #e9ecef;
+      }
+    }
+  }
+</style>
+```
+
+### CSS Grid and Flexbox with Nesting
+```html
+<style>
+  .dashboard {
+    display: grid;
+    grid-template-areas:
+      "header header"
+      "sidebar main";
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 250px 1fr;
+    min-height: 100vh;
+
+    .header {
+      grid-area: header;
+      background: #343a40;
+      color: white;
+      padding: 1rem;
+
+      .nav {
+        display: flex;
+        gap: 1rem;
+
+        a {
+          color: white;
+          text-decoration: none;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+      }
+    }
+
+    .sidebar {
+      grid-area: sidebar;
+      background: #f8f9fa;
+      padding: 1rem;
+    }
+
+    .main {
+      grid-area: main;
+      padding: 1rem;
+    }
+  }
+</style>
 ```
 
 ## Event Handling
