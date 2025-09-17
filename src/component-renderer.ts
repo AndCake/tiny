@@ -155,9 +155,23 @@ export default class ComponentRenderer extends HTMLElement {
       this.handleEventProcessing();
 
       // Trigger component rendered lifecycle
-      this.onComponentRendered();
+      try {
+        this.onComponentRendered();
+      } catch (lifecycleError) {
+        const componentName = this.tagName.toLowerCase() || this.template?.dataset?.name || 'unknown-component';
+        console.error(
+          `Error in onComponentRendered for component "${componentName}":`,
+          lifecycleError
+        );
+        throw new Error(
+          `Component "${componentName}" failed during onComponentRendered: ${(lifecycleError as Error).message}`,
+          { cause: lifecycleError }
+        );
+      }
     } catch (error) {
-      console.error("Rendering error:", error);
+      const componentName = this.tagName.toLowerCase() || this.template?.dataset?.name || 'unknown-component';
+      console.error(`Rendering error in component "${componentName}":`, error);
+      throw error;
     }
   }
 
@@ -256,7 +270,19 @@ export default class ComponentRenderer extends HTMLElement {
    */
   connectedCallback(): void {
     if (typeof this.onComponentMounted === "function") {
-      this.onComponentMounted();
+      try {
+        this.onComponentMounted();
+      } catch (error) {
+        const componentName = this.tagName.toLowerCase() || this.template?.dataset?.name || 'unknown-component';
+        console.error(
+          `Error in onComponentMounted for component "${componentName}":`,
+          error
+        );
+        throw new Error(
+          `Component "${componentName}" failed during onComponentMounted: ${(error as Error).message}`,
+          { cause: error }
+        );
+      }
     }
   }
 
