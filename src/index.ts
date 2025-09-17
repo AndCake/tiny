@@ -54,8 +54,8 @@ async function init(options: InitOptions = {}): Promise<void> {
 // Public API
 export { compileCSS, init, initComponents, parseDataset, safeParse };
 
-// Auto-initialize if module is loaded directly
-if (typeof window !== "undefined") {
+// Auto-initialize if module is loaded directly in browser with customElements support
+if (typeof window !== "undefined" && window.customElements) {
   init().catch(console.error);
 }
 

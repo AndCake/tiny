@@ -22,7 +22,7 @@ interface InitComponentOptions {
  * Advanced Web Component Renderer
  * Provides a flexible and extensible rendering mechanism for declarative web components
  */
-export default class ComponentRenderer extends HTMLElement {
+export default class ComponentRenderer extends (typeof HTMLElement !== "undefined" ? HTMLElement : class {}) {
   template: HTMLTemplateElement;
   context: ComponentRenderer & Record<string, unknown>;
   internals_?: ElementInternals;
@@ -34,7 +34,9 @@ export default class ComponentRenderer extends HTMLElement {
    */
   constructor(template: HTMLTemplateElement) {
     super();
-    this.attachShadow({ mode: "open" });
+    if (typeof HTMLElement !== "undefined" && this.attachShadow) {
+      this.attachShadow({ mode: "open" });
+    }
 
     // Initialize context with dataset and inner HTML
     this.template = template;
@@ -78,18 +80,20 @@ export default class ComponentRenderer extends HTMLElement {
     if (!this.template.dataset.attrs?.includes("@")) {
       return;
     }
-    // observe it for changes (if changed, re-render)
-    const observer = new MutationObserver(() => {
-      this.context["@"] = this.innerHTML;
-      this.render();
-    });
+    // observe it for changes (if changed, re-render) - only in browser environments
+    if (typeof MutationObserver !== "undefined") {
+      const observer = new MutationObserver(() => {
+        this.context["@"] = this.innerHTML;
+        this.render();
+      });
 
-    // Start observing the target node for configured mutations
-    observer.observe(this, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-    });
+      // Start observing the target node for configured mutations
+      observer.observe(this, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+    }
   }
 
   /**
@@ -372,14 +376,16 @@ export async function initComponents(
         }
       };
 
-      // Define the custom element
-      customElements.define(elementName || "", ComponentClass);
+      // Define the custom element (only in browser environments)
+      if (customElements && typeof customElements.define === "function") {
+        customElements.define(elementName || "", ComponentClass);
+      }
     },
   );
 }
 
-// Auto-initialize if in browser environment
-if (typeof window !== "undefined") {
+// Auto-initialize if in browser environment with customElements support
+if (typeof window !== "undefined" && window.customElements) {
   initComponents().catch(console.error);
 }
 
