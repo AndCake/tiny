@@ -241,6 +241,8 @@ export default class ComponentRenderer extends (typeof HTMLElement !== "undefine
       "*",
     );
 
+    const componentName = this.tagName.toLowerCase() || this.template?.dataset?.name || undefined;
+
     elements.forEach((element: Element) => {
       // Skip elements inside template tags
       if (
@@ -264,6 +266,7 @@ export default class ComponentRenderer extends (typeof HTMLElement !== "undefine
               this.render();
             }
           },
+          componentName,
         );
       });
     });

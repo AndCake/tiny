@@ -12,6 +12,7 @@ export class AttributeProcessor {
    * @param attribute - The attribute to process
    * @param context - The rendering context
    * @param renderCallback - Callback to trigger re-rendering
+   * @param componentName - Optional component name for error reporting
    */
   static processAttribute(
     element: HTMLElement,
@@ -21,6 +22,7 @@ export class AttributeProcessor {
       fragment?: DocumentFragment,
       privateContext?: Record<string, unknown>,
     ) => void,
+    componentName?: string,
   ): void {
     const processors: Record<string, Function> = {
       "x-show": this.processShowAttribute,
@@ -39,17 +41,18 @@ export class AttributeProcessor {
         attribute,
         context,
         renderCallback,
+        componentName,
       );
     }
 
     if (attribute.name.startsWith(":")) {
-      return this.processDynamicAttribute(element, attribute, context);
+      return this.processDynamicAttribute(element, attribute, context, componentName);
     }
 
     // Use specific processor if available
     const processor = processors[attribute.name];
     if (processor) {
-      return processor.call(this, element, attribute, context, renderCallback);
+      return processor.call(this, element, attribute, context, renderCallback, componentName);
     }
   }
 
@@ -58,13 +61,19 @@ export class AttributeProcessor {
    * @param element - The target element
    * @param attribute - The x-show attribute
    * @param context - The rendering context
+   * @param componentName - Optional component name for error reporting
    */
   static processShowAttribute(
     element: HTMLElement,
     attribute: Attr,
     context: Record<string, unknown>,
+    _renderCallback?: Function,
+    componentName?: string,
   ): void {
-    const show = ContextEvaluator.evaluate(attribute.value, context, element);
+    const show = ContextEvaluator.evaluate(attribute.value, context, element, {
+      componentName,
+      attributeName: 'x-show',
+    });
     element.hidden = !show;
   }
 
@@ -73,16 +82,20 @@ export class AttributeProcessor {
    * @param element - The target element
    * @param attribute - The x-if attribute
    * @param context - The rendering context
+   * @param componentName - Optional component name for error reporting
    */
   static processIfAttribute(
     element: HTMLElement,
     attribute: Attr,
     context: Record<string, unknown>,
+    _renderCallback?: Function,
+    componentName?: string,
   ): void {
     const shouldRender = ContextEvaluator.evaluate(
       attribute.value,
       context,
       element,
+      { componentName, attributeName: 'x-if' },
     );
     if (!shouldRender) {
       element.remove();
@@ -95,6 +108,7 @@ export class AttributeProcessor {
    * @param attribute - The x-for attribute
    * @param context - The rendering context
    * @param renderCallback - Callback to trigger re-rendering
+   * @param componentName - Optional component name for error reporting
    */
   static processForAttribute(
     element: HTMLTemplateElement,
@@ -104,6 +118,7 @@ export class AttributeProcessor {
       fragment: DocumentFragment,
       privateContext: Record<string, unknown>,
     ) => void,
+    componentName?: string,
   ): void {
     if (element.tagName.toLowerCase() !== "template") {
       console.warn(
@@ -113,7 +128,7 @@ export class AttributeProcessor {
       return;
     }
 
-    const iterations = this.parseListIterations(attribute.value, context);
+    const iterations = this.parseListIterations(attribute.value, context, componentName);
 
     iterations.forEach((iterationContext) => {
       const clone = element.content.cloneNode(true) as DocumentFragment;
@@ -133,16 +148,20 @@ export class AttributeProcessor {
    * @param element - The target element
    * @param attribute - The x-html attribute
    * @param context - The rendering context
+   * @param componentName - Optional component name for error reporting
    */
   static processHtmlAttribute(
     element: HTMLElement,
     attribute: Attr,
     context: Record<string, unknown>,
+    _renderCallback?: Function,
+    componentName?: string,
   ): void {
     const htmlContent = ContextEvaluator.evaluate(
       attribute.value,
       context,
       element,
+      { componentName, attributeName: 'x-html' },
     ) as string;
     element.innerHTML = htmlContent || "";
   }
@@ -152,16 +171,20 @@ export class AttributeProcessor {
    * @param element - The target element
    * @param attribute - The x-text attribute
    * @param context - The rendering context
+   * @param componentName - Optional component name for error reporting
    */
   static processTextAttribute(
     element: HTMLElement,
     attribute: Attr,
     context: Record<string, unknown>,
+    _renderCallback?: Function,
+    componentName?: string,
   ): void {
     const textContent = ContextEvaluator.evaluate(
       attribute.value,
       context,
       element,
+      { componentName, attributeName: 'x-text' },
     ) as string;
     element.textContent = textContent || "";
   }
@@ -172,18 +195,21 @@ export class AttributeProcessor {
    * @param attribute - The x-model attribute
    * @param context - The rendering context
    * @param renderCallback - Callback to trigger re-rendering
+   * @param componentName - Optional component name for error reporting
    */
   static processModelAttribute(
     element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
     attribute: Attr,
     context: Record<string, unknown>,
     renderCallback: () => void,
+    componentName?: string,
   ): void {
     // Set initial value
     const initialValue = (ContextEvaluator.evaluate(
       attribute.value,
       context,
-      element,
+      element as HTMLElement,
+      { componentName, attributeName: 'x-model' },
     ) || "") as string;
 
     element.value = initialValue;
@@ -202,11 +228,14 @@ export class AttributeProcessor {
    * @param element - The target element
    * @param attribute - The x-ref attribute
    * @param context - The rendering context
+   * @param componentName - Optional component name for error reporting
    */
   static processRefAttribute(
     element: HTMLElement,
     attribute: Attr,
     context: Record<string, unknown>,
+    _renderCallback?: Function,
+    _componentName?: string,
   ): void {
     context.$refs = context.$refs || {};
     (context.$refs as Record<string, HTMLElement>)[attribute.value] = element;
@@ -218,18 +247,21 @@ export class AttributeProcessor {
    * @param attribute - The event attribute
    * @param context - The rendering context
    * @param renderCallback - Callback to trigger re-rendering
+   * @param componentName - Optional component name for error reporting
    */
   static processEventAttribute(
     element: HTMLElement,
     attribute: Attr,
     context: ComponentRenderer & Record<string, unknown>,
     renderCallback: () => void,
+    componentName?: string,
   ): void {
     const eventName = attribute.name.substring(1);
     const handler = ContextEvaluator.createEventHandler(
       attribute.value,
       context,
       element,
+      componentName,
     );
 
     element.addEventListener(eventName, (event) => {
@@ -243,17 +275,20 @@ export class AttributeProcessor {
    * @param element - The target element
    * @param attribute - The dynamic attribute
    * @param context - The rendering context
+   * @param componentName - Optional component name for error reporting
    */
   static processDynamicAttribute(
     element: HTMLElement,
     attribute: Attr,
     context: Record<string, unknown>,
+    componentName?: string,
   ): void {
     const attrName = attribute.name.substring(1);
     const value = ContextEvaluator.evaluate(
       attribute.value,
       context,
       element,
+      { componentName, attributeName: `:${attrName}` },
     ) as string;
 
     if (value) {
@@ -291,11 +326,13 @@ export class AttributeProcessor {
    * Parse list iterations for x-for attribute
    * @param expression - The x-for expression
    * @param context - The rendering context
+   * @param componentName - Optional component name for error reporting
    * @returns List of iteration contexts
    */
   static parseListIterations(
     expression: string,
     context: Record<string, unknown>,
+    componentName?: string,
   ): Record<string, unknown>[] {
     try {
       const [iteratorVar, collectionExpr] = expression.split(/\s+(?:of|in)\s+/);
@@ -313,7 +350,13 @@ export class AttributeProcessor {
 
       return fn.call(context, context);
     } catch (error) {
-      console.error("List iteration parsing error:", error);
+      const contextStr = componentName ? ` in component <${componentName}>` : '';
+      console.error(
+        `List iteration parsing error${contextStr}:\n` +
+        `  x-for expression: ${expression}\n` +
+        `  Error: ${(error as Error).message}`,
+        error,
+      );
       return [];
     }
   }
