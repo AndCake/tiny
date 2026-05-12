@@ -433,6 +433,90 @@ The `&` selector refers to the parent selector, enabling powerful pattern matchi
 </style>
 ```
 
+### Reusable Style Objects with the Style Registry
+
+For large component libraries, sharing reusable styles across components without CSS @import or global classes, use the **style registry** — a namespace of plain JS objects bound to every component as `$styles`.
+
+#### Define Styles Once
+
+Load a theme or design tokens once in your app (e.g., in a `<script type="module">` at the top of your page):
+
+```javascript
+import { defineStyles } from "@andcake/tiny";
+
+defineStyles("theme", {
+  card: {
+    padding: "1rem",
+    borderRadius: "8px",
+    border: "1px solid #ddd",
+  },
+  featured: {
+    borderColor: "#007bff",
+    background: "#f8f9fa",
+  },
+  button: {
+    padding: "0.5rem 1rem",
+    border: "none",
+    cursor: "pointer",
+    borderRadius: "4px",
+  },
+});
+```
+
+#### Compose in Your Components
+
+Use `:style` with object spread to mix base styles and overrides:
+
+```html
+<template data-name="x-card" data-attrs="featured">
+  <div :style="{ ...$styles.theme.card, ...(featured && $styles.theme.featured) }">
+    <h3><slot></slot></h3>
+  </div>
+  <script>
+  {
+    featured: false,
+  }
+  </script>
+</template>
+```
+
+When used:
+```html
+<x-card></x-card>
+<!-- renders: <div style="padding: 1rem; border-radius: 8px; border: 1px solid #ddd;">… -->
+
+<x-card featured data-featured="true"></x-card>
+<!-- renders: <div style="padding: 1rem; border-radius: 8px; border-color: #007bff; background: #f8f9fa;">… -->
+```
+
+#### How It Works
+
+- **`defineStyles(namespace, styles)`** registers a JS object of style definitions under a namespace.
+- **`$styles`** is available in every component's template context, always pointing to the live registry.
+- **`:style="{ ...object }"`** evaluates the expression and converts the resulting object to a CSS declaration string:
+  - camelCase keys become kebab-case (`borderRadius` → `border-radius`)
+  - vendor-prefixed keys work (`WebkitTransform` → `-webkit-transform`)
+  - `null`, `undefined`, and `false` values are skipped (handy for conditional spreads)
+  - nested objects are skipped (use `<style>` for pseudo-selectors and media queries)
+  - numbers are passed through; no automatic `px` suffix
+
+#### Composition Patterns
+
+Spread multiple sources for complex components:
+
+```html
+<!-- Base + state override -->
+<div :style="{ ...$styles.theme.button, ...(isPrimary && $styles.theme.buttonPrimary) }">
+
+<!-- Size variant -->
+<div :style="{ ...$styles.theme.button, ...$styles.sizes[size] }">
+
+<!-- Conditional override + inline -->
+<div :style="{ ...$styles.theme.card, ...(disabled && { opacity: '0.5' }), padding: '2rem' }">
+```
+
+Since `$styles` is a live reference, you can define themes dynamically or lazy-load design tokens without re-rendering.
+
 ## Event Handling
 
 ### Basic Events

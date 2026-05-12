@@ -1,6 +1,7 @@
 import { parseDataset, safeParse } from "./dataset-parser.ts";
 import { initComponents } from "./component-renderer.ts";
 import { compileCSS } from "./stylis-utils.ts";
+import { defineStyles, styleObjectToCss } from "./style-registry.ts";
 
 /**
  * Configuration options for Tiny Web Components library initialization
@@ -52,7 +53,15 @@ async function init(options: InitOptions = {}): Promise<void> {
 }
 
 // Public API
-export { compileCSS, init, initComponents, parseDataset, safeParse };
+export {
+  compileCSS,
+  defineStyles,
+  init,
+  initComponents,
+  parseDataset,
+  safeParse,
+  styleObjectToCss,
+};
 
 // Auto-initialize if module is loaded directly in browser with customElements support
 if (typeof window !== "undefined" && window.customElements) {

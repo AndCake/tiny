@@ -1,4 +1,5 @@
 import ContextEvaluator from "./context-evaluator.ts";
+import { styleObjectToCss } from "../style-registry.ts";
 import type ComponentRenderer from "../component-renderer.ts";
 
 /**
@@ -289,10 +290,22 @@ export class AttributeProcessor {
       context,
       element,
       { componentName, attributeName: `:${attrName}` },
-    ) as string;
+    );
+
+    // Object-valued :style is converted to a CSS declaration string,
+    // enabling composition via spreads from $styles.
+    if (attrName === "style" && value && typeof value === "object") {
+      const cssText = styleObjectToCss(value as Record<string, unknown>);
+      if (cssText) {
+        element.setAttribute("style", cssText);
+      } else {
+        element.removeAttribute("style");
+      }
+      return;
+    }
 
     if (value) {
-      element.setAttribute(attrName, value);
+      element.setAttribute(attrName, value as string);
     } else {
       element.removeAttribute(attrName);
     }
