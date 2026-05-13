@@ -117,4 +117,39 @@ describe("AttributeProcessor", () => {
     AttributeProcessor.processAttribute(element, attribute, context, () => {});
     assert(element.hasAttribute("hidden"));
   });
+
+  it(":style accepts an object literal and serializes to a CSS string", () => {
+    const attribute = {
+      name: ":style",
+      value: "({ color: 'red', borderRadius: '8px' })",
+    } as Attr;
+    AttributeProcessor.processAttribute(element, attribute, context, () => {});
+    assertEquals(
+      element.getAttribute("style"),
+      "color: red; border-radius: 8px",
+    );
+  });
+
+  it(":style composes spread style objects from context", () => {
+    context.base = { padding: "1rem" };
+    context.accent = { color: "blue" };
+    const attribute = {
+      name: ":style",
+      value: "({ ...base, ...accent })",
+    } as Attr;
+    AttributeProcessor.processAttribute(element, attribute, context, () => {});
+    assertEquals(
+      element.getAttribute("style"),
+      "padding: 1rem; color: blue",
+    );
+  });
+
+  it(":style still accepts plain strings (back-compat)", () => {
+    const attribute = {
+      name: ":style",
+      value: "'color: green'",
+    } as Attr;
+    AttributeProcessor.processAttribute(element, attribute, context, () => {});
+    assertEquals(element.getAttribute("style"), "color: green");
+  });
 });

@@ -24,7 +24,8 @@
     "./core/attribute-processor": "./src/core/attribute-processor.ts",
     "./core/context-evaluator": "./src/core/context-evaluator.ts",
     "./core/template-renderer": "./src/core/template-renderer.ts",
-    "./stylis-utils": "./src/stylis-utils.ts"
+    "./stylis-utils": "./src/stylis-utils.ts",
+    "./style-registry": "./src/style-registry.ts"
   },
   "publish": {
     "include": [

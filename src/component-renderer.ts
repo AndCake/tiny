@@ -1,6 +1,7 @@
 import Mustache from "./core/template-renderer.ts";
 import { parseDataset } from "./dataset-parser.ts";
 import { processTemplateCSS } from "./stylis-utils.ts";
+import { getStyles } from "./style-registry.ts";
 import { ContextEvaluator } from "./core/context-evaluator.ts";
 import { AttributeProcessor } from "./core/attribute-processor.ts";
 
@@ -45,6 +46,7 @@ export default class ComponentRenderer extends (typeof HTMLElement !== "undefine
       ...parseDataset(this.dataset),
       "@": this.innerHTML,
       $refs: {},
+      $styles: getStyles(),
     });
 
     this.handleFormElements();
