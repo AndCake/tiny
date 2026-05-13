@@ -265,8 +265,9 @@ export class AttributeProcessor {
     );
 
     element.addEventListener(eventName, (event) => {
-      handler(event);
-      renderCallback();
+      if (!handler(event)) {
+      	renderCallback();
+      }
     });
   }
 
