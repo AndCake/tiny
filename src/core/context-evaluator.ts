@@ -47,8 +47,12 @@ export class ContextEvaluator {
       if (element) {
         element.context = context;
       }
-      // Extend context with element reference if provided
-      const fullContext = element ? { ...context, $el: element } : context;
+      // Extend context with element reference if provided.
+      // Object.create(context) keeps context in the prototype chain so `with`
+      // resolves bare names (e.g. `isLogin`) the same as `this.context.isLogin`.
+      const fullContext = element
+        ? Object.assign(Object.create(context), { $el: element })
+        : context;
 
       // Use Function constructor with 'with' statement for dynamic evaluation
       const evalFunction = new Function(
